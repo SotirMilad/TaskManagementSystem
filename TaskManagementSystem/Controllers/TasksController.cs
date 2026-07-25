@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using TaskManagementSystem.DTOs.Common;
 using TaskManagementSystem.DTOs.Tasks.Requests;
 using TaskManagementSystem.Services.IServices;
@@ -7,7 +8,8 @@ namespace TaskManagementSystem.Controllers
 {
     [ApiController]
     [Route("api/tasks")]
-    public class TasksController : ControllerBase
+    [Authorize]
+    public class TasksController : ApiControllerBase
     {
         private readonly ITaskService _taskService;
 
@@ -22,7 +24,7 @@ namespace TaskManagementSystem.Controllers
             int projectId,
             [FromBody] CreateTaskRequest request)
         {
-            var task = await _taskService.CreateAsync(projectId, request);
+            var task = await _taskService.CreateAsync(CurrentUserId, projectId, request);
 
             return CreatedAtAction(
                 nameof(GetTaskById),
@@ -36,7 +38,7 @@ namespace TaskManagementSystem.Controllers
             int projectId,
             [FromQuery] TaskQueryParameters query)
         {
-            var tasks = await _taskService.GetByProjectAsync(projectId, query);
+            var tasks = await _taskService.GetByProjectAsync(CurrentUserId, projectId, query);
 
             return Ok(tasks);
         }
@@ -46,7 +48,7 @@ namespace TaskManagementSystem.Controllers
         public async Task<IActionResult> GetAllTasks(
             [FromQuery] TaskQueryParameters query)
         {
-            var tasks = await _taskService.GetAllAsync(query);
+            var tasks = await _taskService.GetAllAsync(CurrentUserId, query);
 
             return Ok(tasks);
         }
@@ -55,7 +57,7 @@ namespace TaskManagementSystem.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetTaskById(int id)
         {
-            var task = await _taskService.GetByIdAsync(id);
+            var task = await _taskService.GetByIdAsync(CurrentUserId, id);
 
             return Ok(task);
         }
@@ -66,7 +68,7 @@ namespace TaskManagementSystem.Controllers
             int id,
             [FromBody] UpdateTaskRequest request)
         {
-            var task = await _taskService.UpdateAsync(id, request);
+            var task = await _taskService.UpdateAsync(CurrentUserId, id, request);
 
             return Ok(task);
         }
@@ -75,7 +77,7 @@ namespace TaskManagementSystem.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTask(int id)
         {
-            await _taskService.DeleteAsync(id);
+            await _taskService.DeleteAsync(CurrentUserId, id);
 
             return NoContent();
         }

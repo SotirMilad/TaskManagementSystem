@@ -21,10 +21,10 @@ namespace TaskManagementSystem.Services.ImplementationServices
             _logger = logger;
         }
 
-        public async Task<TaskResponse> CreateAsync(int projectId, CreateTaskRequest request)
+        public async Task<TaskResponse> CreateAsync(int userId, int projectId, CreateTaskRequest request)
         {
             // check project exists
-            var project = await _context.Projects.FindAsync(projectId);
+            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId && p.UserId == userId);
 
             if (project == null)
                 throw ApiException.NotFound($"Project with ID {projectId} was not found.");
@@ -60,7 +60,7 @@ namespace TaskManagementSystem.Services.ImplementationServices
             return MapToResponse(task, project.Name);
         }
 
-        public async Task<PagedResult<TaskResponse>> GetAllAsync(TaskQueryParameters query)
+        public async Task<PagedResult<TaskResponse>> GetAllAsync(int userId, TaskQueryParameters query)
         {
             // validate pagination
             query.Page = Math.Max(query.Page, 1);
@@ -68,8 +68,8 @@ namespace TaskManagementSystem.Services.ImplementationServices
 
             var tasksQuery = _context.Tasks
                 .Include(t => t.Project)
-                .AsNoTracking()
-                .AsQueryable();
+                .Where(t => t.Project.UserId == userId)
+                .AsNoTracking();
 
             tasksQuery = ApplySearch(tasksQuery, query.Search);
             tasksQuery = ApplyFilters(tasksQuery, query);
@@ -96,11 +96,11 @@ namespace TaskManagementSystem.Services.ImplementationServices
             return result;
         }
 
-        public async Task<PagedResult<TaskResponse>> GetByProjectAsync(int projectId, TaskQueryParameters query)
+        public async Task<PagedResult<TaskResponse>> GetByProjectAsync(int userId, int projectId, TaskQueryParameters query)
         {
             // check project exists
             bool projectExists = await _context.Projects
-                .AnyAsync(p => p.Id == projectId);
+                .AnyAsync(p => p.Id == projectId && p.UserId == userId);
 
             if (!projectExists)
             {
@@ -139,12 +139,12 @@ namespace TaskManagementSystem.Services.ImplementationServices
             };
         }
 
-        public async Task<TaskResponse> GetByIdAsync(int id)
+        public async Task<TaskResponse> GetByIdAsync(int userId, int id)
         {
             var task = await _context.Tasks
                 .Include(t => t.Project)
                 .AsNoTracking()
-                .FirstOrDefaultAsync(t => t.Id == id);
+                .FirstOrDefaultAsync(t => t.Id == id && t.Project!.UserId == userId);
 
             if (task == null)
             {
@@ -154,11 +154,11 @@ namespace TaskManagementSystem.Services.ImplementationServices
             return MapToResponse(task, task.Project!.Name);
         }
 
-        public async Task<TaskResponse> UpdateAsync(int id, UpdateTaskRequest request)
+        public async Task<TaskResponse> UpdateAsync(int userId, int id, UpdateTaskRequest request)
         {
             var task = await _context.Tasks
                 .Include(t => t.Project)
-                .FirstOrDefaultAsync(t => t.Id == id);
+                 .FirstOrDefaultAsync(t => t.Id == id && t.Project!.UserId == userId);
 
             if (task == null)
             {
@@ -202,9 +202,11 @@ namespace TaskManagementSystem.Services.ImplementationServices
             return MapToResponse(task, task.Project!.Name);
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task DeleteAsync(int userId, int id)
         {
-            var task = await _context.Tasks.FindAsync(id);
+            var task = await _context.Tasks
+                .Include(t => t.Project)
+                .FirstOrDefaultAsync(t => t.Id == id && t.Project!.UserId == userId);
 
             if (task == null)
             {

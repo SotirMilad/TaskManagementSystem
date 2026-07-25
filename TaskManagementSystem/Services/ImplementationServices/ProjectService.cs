@@ -20,14 +20,19 @@ namespace TaskManagementSystem.Services.ImplementationServices
             _logger = logger;    
         }
 
-        public async Task<ProjectResponse> CreateAsync(CreateProjectRequest request)
+        public async Task<ProjectResponse> CreateAsync(int userId, CreateProjectRequest request)
         {
+
+            var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
+            System.Diagnostics.Debug.WriteLine($"DEBUG: userExists in DB (via app's own context) = {userExists}, userId = {userId}");
+
+
             // validate project name
             if (string.IsNullOrWhiteSpace(request.Name))
                 throw ApiException.BadRequest("Project name is required.");
 
             // check duplicate project name
-            var nameTaken = await _context.Projects.AnyAsync(p => p.Name == request.Name);
+            var nameTaken = await _context.Projects.AnyAsync(p => p.UserId == userId && p.Name == request.Name);
             if (nameTaken)
                 throw ApiException.Conflict($"A project named '{request.Name}' already exists.");
 
@@ -36,6 +41,7 @@ namespace TaskManagementSystem.Services.ImplementationServices
             // create the projectt
             var project = new Project
             {
+                UserId = userId,
                 Name = request.Name.Trim(),
                 Description = request.Description,
                 CreatedAt = now,
@@ -48,13 +54,16 @@ namespace TaskManagementSystem.Services.ImplementationServices
             return ToResponse(project);
         }
 
-        public async Task<PagedResult<ProjectResponse>> GetAllAsync(int page, int limit)
+        public async Task<PagedResult<ProjectResponse>> GetAllAsync(int userId, int page, int limit)
         {
             // validate pagination
             page = Math.Max(page, 1);
             limit = Math.Clamp(limit, 1, 200);
 
-            var query = _context.Projects.OrderBy(p => p.Id);
+            var query = _context.Projects
+                .Where(p => p.UserId == userId)
+                .OrderBy(p => p.Id);
+
 
             // count
             var total = await query.CountAsync();
@@ -71,9 +80,10 @@ namespace TaskManagementSystem.Services.ImplementationServices
             };
         }
 
-        public async Task<ProjectResponse> GetByIdAsync(int id)
+        public async Task<ProjectResponse> GetByIdAsync(int userId, int id)
         {
-            var project = await _context.Projects.FindAsync(id);
+            var project = await _context.Projects
+                .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
 
             if (project == null)
             {
@@ -83,9 +93,10 @@ namespace TaskManagementSystem.Services.ImplementationServices
             return ToResponse(project);
         }
 
-        public async Task<ProjectResponse> UpdateAsync(int id, UpdateProjectRequest request)
+        public async Task<ProjectResponse> UpdateAsync(int userId, int id, UpdateProjectRequest request)
         {
-            var project = await _context.Projects.FindAsync(id);
+            var project = await _context.Projects
+                .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
 
             if (project == null)
             {
@@ -97,7 +108,7 @@ namespace TaskManagementSystem.Services.ImplementationServices
 
             if (!string.Equals(project.Name, request.Name, StringComparison.Ordinal))
             {
-                var nameTaken = await _context.Projects.AnyAsync(p => p.Name == request.Name && p.Id != id);
+                var nameTaken = await _context.Projects.AnyAsync(p => p.UserId == userId && p.Name == request.Name && p.Id != id);
                 if (nameTaken)
                     throw ApiException.Conflict($"A project named '{request.Name}' already exists.");
             }
@@ -110,9 +121,9 @@ namespace TaskManagementSystem.Services.ImplementationServices
             return ToResponse(project);
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task DeleteAsync(int userId, int id)
         {
-            var project = await _context.Projects.FindAsync(id);
+            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
 
             if (project == null)
             {

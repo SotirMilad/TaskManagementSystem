@@ -6,14 +6,10 @@ namespace TaskManagementSystem.Services.IServices
 {
     public interface IProjectService
     {
-        Task<ProjectResponse> CreateAsync(CreateProjectRequest request);
-
-        Task<PagedResult<ProjectResponse>> GetAllAsync(int page, int limit);
-
-        Task<ProjectResponse> GetByIdAsync(int id);
-
-        Task<ProjectResponse> UpdateAsync(int id, UpdateProjectRequest request);
-
-        Task DeleteAsync(int id);
+        Task<ProjectResponse> CreateAsync(int userId, CreateProjectRequest request);
+        Task<PagedResult<ProjectResponse>> GetAllAsync(int userId, int page, int limit);
+        Task<ProjectResponse> GetByIdAsync(int userId, int id);
+        Task<ProjectResponse> UpdateAsync(int userId, int id, UpdateProjectRequest request);
+        Task DeleteAsync(int userId, int id);
     }
 }

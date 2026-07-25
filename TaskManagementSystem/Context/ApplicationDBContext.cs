@@ -13,6 +13,7 @@ namespace TaskManagementSystem.Context
 
         public DbSet<Project> Projects => Set<Project>();
         public DbSet<TaskItem> Tasks => Set<TaskItem>();
+        public DbSet<User> Users => Set<User>();
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -22,8 +23,14 @@ namespace TaskManagementSystem.Context
                 entity.Property(p => p.Name).IsRequired().HasMaxLength(200);
 
                 // Duplicate names are rejected 
-                entity.HasIndex(p => p.Name).IsUnique();
+                entity.HasIndex(p => new { p.UserId, p.Name }).IsUnique();
             });
+
+            modelBuilder.Entity<Project>()
+                .HasOne(p => p.User)
+                .WithMany(u => u.Projects)
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<TaskItem>(entity =>
             {
