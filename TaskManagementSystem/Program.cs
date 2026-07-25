@@ -13,7 +13,7 @@ namespace TaskManagementSystem
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -68,6 +68,14 @@ namespace TaskManagementSystem
                 });
 
             var app = builder.Build();
+
+            // for data seeding 
+            using (var scope = app.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<ApplicationDBContext>();
+
+                await SeedData.SeedAsync(context);
+            }
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())

@@ -1,4 +1,6 @@
-﻿namespace TaskManagementSystem.DTOs.Common
+﻿using Microsoft.AspNetCore.Mvc;
+
+namespace TaskManagementSystem.DTOs.Common
 {
     public class TaskQueryParameters
     {
@@ -18,6 +20,8 @@
 
             public string SortDirection { get; set; } = "asc";
 
+
+            [FromQuery(Name = "q")]
             public string? Search { get; set; }
     }
 

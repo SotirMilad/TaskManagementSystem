@@ -298,12 +298,12 @@ namespace TaskManagementSystem.Services.ImplementationServices
                 return query;
             }
 
-            search = search.Trim();
+            search = search.Trim().ToLower();
 
             return query.Where(t =>
-                EF.Functions.Like(t.Title, $"%{search}%") ||
+                t.Title.ToLower().Contains(search) ||
                 (t.Description != null &&
-                 EF.Functions.Like(t.Description, $"%{search}%")));
+                 t.Description.ToLower().Contains(search)));
         }
 
         private TaskState ParseStatus(string? status)
