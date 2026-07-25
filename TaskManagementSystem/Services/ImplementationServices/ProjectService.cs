@@ -32,7 +32,9 @@ namespace TaskManagementSystem.Services.ImplementationServices
                 throw ApiException.BadRequest("Project name is required.");
 
             // check duplicate project name
-            var nameTaken = await _context.Projects.AnyAsync(p => p.UserId == userId && p.Name == request.Name);
+            var nameTaken = await _context.Projects
+                 .Where(p => p.DeletedAt == null)
+                 .AnyAsync(p => p.UserId == userId && p.Name == request.Name);
             if (nameTaken)
                 throw ApiException.Conflict($"A project named '{request.Name}' already exists.");
 
@@ -61,6 +63,7 @@ namespace TaskManagementSystem.Services.ImplementationServices
             limit = Math.Clamp(limit, 1, 200);
 
             var query = _context.Projects
+                .Where(p => p.DeletedAt == null)
                 .Where(p => p.UserId == userId)
                 .OrderBy(p => p.Id);
 
@@ -83,6 +86,7 @@ namespace TaskManagementSystem.Services.ImplementationServices
         public async Task<ProjectResponse> GetByIdAsync(int userId, int id)
         {
             var project = await _context.Projects
+                .Where(p => p.DeletedAt == null)
                 .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
 
             if (project == null)
@@ -96,6 +100,7 @@ namespace TaskManagementSystem.Services.ImplementationServices
         public async Task<ProjectResponse> UpdateAsync(int userId, int id, UpdateProjectRequest request)
         {
             var project = await _context.Projects
+                .Where(p => p.DeletedAt == null)
                 .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
 
             if (project == null)
@@ -108,7 +113,9 @@ namespace TaskManagementSystem.Services.ImplementationServices
 
             if (!string.Equals(project.Name, request.Name, StringComparison.Ordinal))
             {
-                var nameTaken = await _context.Projects.AnyAsync(p => p.UserId == userId && p.Name == request.Name && p.Id != id);
+                var nameTaken = await _context.Projects
+                    .Where(p => p.DeletedAt == null)
+                    .AnyAsync(p => p.UserId == userId && p.Name == request.Name && p.Id != id);
                 if (nameTaken)
                     throw ApiException.Conflict($"A project named '{request.Name}' already exists.");
             }
@@ -123,14 +130,29 @@ namespace TaskManagementSystem.Services.ImplementationServices
 
         public async Task DeleteAsync(int userId, int id)
         {
-            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
+            var project = await _context.Projects
+                .Where(p => p.DeletedAt == null)
+                .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
 
             if (project == null)
             {
                 throw ApiException.NotFound($"Project with id {id} was not found.");
             }
 
-            _context.Projects.Remove(project);
+            // soft delete
+            project.DeletedAt = DateTime.UtcNow;
+
+            // hard delete
+            //_context.Projects.Remove(project);
+
+            var tasks = await _context.Tasks
+                .Where(t => t.ProjectId == project.Id && t.DeletedAt == null)
+                .ToListAsync();
+
+            foreach (var task in tasks)
+            {
+                task.DeletedAt = DateTime.UtcNow;
+            }
             await _context.SaveChangesAsync();
 
             _logger.LogInformation("Deleted project {ProjectId} ({ProjectName}) and cascaded its tasks", id, project.Name);

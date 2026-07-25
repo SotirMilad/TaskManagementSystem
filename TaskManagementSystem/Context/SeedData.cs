@@ -9,6 +9,8 @@ namespace TaskManagementSystem.Context
     {
         public static async Task SeedAsync(ApplicationDBContext context)
         {
+
+            // seeding willnot be applied if our databasae have data in it
             if (await context.Users.AnyAsync())
                 return;
 

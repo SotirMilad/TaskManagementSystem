@@ -24,7 +24,9 @@ namespace TaskManagementSystem.Services.ImplementationServices
         public async Task<TaskResponse> CreateAsync(int userId, int projectId, CreateTaskRequest request)
         {
             // check project exists
-            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId && p.UserId == userId);
+            var project = await _context.Projects
+                .Where(p => p.DeletedAt == null)
+                .FirstOrDefaultAsync(p => p.Id == projectId && p.UserId == userId);
 
             if (project == null)
                 throw ApiException.NotFound($"Project with ID {projectId} was not found.");
@@ -67,6 +69,7 @@ namespace TaskManagementSystem.Services.ImplementationServices
             query.Limit = Math.Clamp(query.Limit, 1, 100);
 
             var tasksQuery = _context.Tasks
+                .Where(t => t.DeletedAt == null)
                 .Include(t => t.Project)
                 .Where(t => t.Project.UserId == userId)
                 .AsNoTracking();
@@ -100,6 +103,7 @@ namespace TaskManagementSystem.Services.ImplementationServices
         {
             // check project exists
             bool projectExists = await _context.Projects
+                .Where(p => p.DeletedAt == null)
                 .AnyAsync(p => p.Id == projectId && p.UserId == userId);
 
             if (!projectExists)
@@ -112,6 +116,7 @@ namespace TaskManagementSystem.Services.ImplementationServices
             query.Limit = Math.Clamp(query.Limit, 1, 100);
 
             var tasksQuery = _context.Tasks
+                .Where(t => t.DeletedAt == null)
                 .Include(t => t.Project)
                 .AsNoTracking()
                 .Where(t => t.ProjectId == projectId);
@@ -142,6 +147,7 @@ namespace TaskManagementSystem.Services.ImplementationServices
         public async Task<TaskResponse> GetByIdAsync(int userId, int id)
         {
             var task = await _context.Tasks
+                .Where(t => t.DeletedAt == null)
                 .Include(t => t.Project)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Id == id && t.Project!.UserId == userId);
@@ -157,8 +163,9 @@ namespace TaskManagementSystem.Services.ImplementationServices
         public async Task<TaskResponse> UpdateAsync(int userId, int id, UpdateTaskRequest request)
         {
             var task = await _context.Tasks
+                .Where(t => t.DeletedAt == null)
                 .Include(t => t.Project)
-                 .FirstOrDefaultAsync(t => t.Id == id && t.Project!.UserId == userId);
+                .FirstOrDefaultAsync(t => t.Id == id && t.Project!.UserId == userId);
 
             if (task == null)
             {
@@ -205,6 +212,7 @@ namespace TaskManagementSystem.Services.ImplementationServices
         public async Task DeleteAsync(int userId, int id)
         {
             var task = await _context.Tasks
+                .Where(t => t.DeletedAt == null)
                 .Include(t => t.Project)
                 .FirstOrDefaultAsync(t => t.Id == id && t.Project!.UserId == userId);
 
@@ -213,7 +221,12 @@ namespace TaskManagementSystem.Services.ImplementationServices
                 throw ApiException.NotFound($"Task with ID {id} was not found.");
             }
 
-            _context.Tasks.Remove(task);
+
+            // soft delete
+            task.DeletedAt = DateTime.UtcNow;
+
+            //hard delete
+            //_context.Tasks.Remove(task);
 
             await _context.SaveChangesAsync();
 

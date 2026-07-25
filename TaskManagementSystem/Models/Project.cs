@@ -8,7 +8,7 @@
         public string? Description { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
-
+        public DateTime? DeletedAt { get; set; }
         public User User { get; set; } = null!;
         public ICollection<TaskItem> Tasks { get; set; } = new List<TaskItem>();
     }
