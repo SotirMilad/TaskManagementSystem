@@ -61,6 +61,8 @@ https://localhost:7207/swagger
 - Entity Framework Core
 - SQL Server Database
 - Seed Data
+- Unit Testing with xUnit
+
 ---
 
 ## Seed Data
@@ -168,6 +170,24 @@ The database consists of three main entities:
 Projects and Tasks implement **soft delete** using the `DeletedAt` timestamp instead of permanently removing records from the database.
 
 ---
+---
+
+# Testing
+
+The project includes unit tests to verify the business logic of the application services.
+
+The tests are written using:
+
+- **xUnit** - Testing framework
+- **Entity Framework Core InMemory Database** - Isolated database testing
+- **Microsoft.Extensions.Logging.Abstractions** - Mock logging dependency
+
+## Running Tests
+
+To run all tests:
+
+```bash
+dotnet test
 
 # Author
 
