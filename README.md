@@ -194,6 +194,6 @@ dotnet test
 
 Sotir Milad
 
-Computer Engineering Graduate
+Computer Engineering Fresh Graduate
 
 ASP.NET Core Developer
