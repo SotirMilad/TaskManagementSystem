@@ -170,8 +170,6 @@ The database consists of three main entities:
 Projects and Tasks implement **soft delete** using the `DeletedAt` timestamp instead of permanently removing records from the database.
 
 ---
----
-
 # Testing
 
 The project includes unit tests to verify the business logic of the application services.
@@ -188,6 +186,8 @@ To run all tests:
 
 ```bash
 dotnet test
+
+---
 
 # Author
 
