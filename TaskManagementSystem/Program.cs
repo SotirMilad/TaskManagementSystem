@@ -24,9 +24,15 @@ namespace TaskManagementSystem
             
             builder.Services.AddSwaggerGen();
 
-            builder.Services.AddDbContext<ApplicationDBContext>(options =>
-             options.UseSqlServer("Server=DESKTOP-8QTNVPD;Database=TaskManagementDBx;Integrated Security=True;TrustServerCertificate=True"));
+            //builder.Services.AddDbContext<ApplicationDBContext>(options =>
+            // options.UseSqlServer("Server=DESKTOP-8QTNVPD;Database=TaskManagementDBx;Integrated Security=True;TrustServerCertificate=True"));
 
+            builder.Services.AddDbContext<ApplicationDBContext>(options =>
+            {
+                var connection = builder.Configuration.GetConnectionString("DefaultConnection");
+
+                options.UseSqlServer(connection);
+            });
 
             builder.Services.AddAuthorization();
             builder.Services.AddScoped<IAuthService, AuthService>();
@@ -70,8 +76,16 @@ namespace TaskManagementSystem
             var app = builder.Build();
 
             // for data seeding 
-            using (var scope = app.Services.CreateScope())
+            //using (var scope = app.Services.CreateScope())
+            //{
+            //    var context = scope.ServiceProvider.GetRequiredService<ApplicationDBContext>();
+
+            //    await SeedData.SeedAsync(context);
+            //}
+
+            if (!app.Environment.IsEnvironment("Testing"))
             {
+                using var scope = app.Services.CreateScope();
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDBContext>();
 
                 await SeedData.SeedAsync(context);
